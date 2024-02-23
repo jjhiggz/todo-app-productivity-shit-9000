@@ -13,7 +13,6 @@ function Home() {
         Logout
       </button>
 
-      {authState == "unauthenticated" && <div>Please Log in</div>}
       {authState == "authenticated" && <div>Hello {user?.email}</div>}
       {authState == "loading" && <div>loading...</div>}
     </>
