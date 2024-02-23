@@ -1,6 +1,4 @@
-import "./App.css";
-
-function App() {
+function Home() {
   return (
     <>
       <header>
@@ -10,4 +8,4 @@ function App() {
   );
 }
 
-export default App;
+export default Home;
