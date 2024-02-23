@@ -1,13 +1,12 @@
-import "./App.css";
+import { Outlet } from "react-router";
 
-function App() {
+export const Layout = () => {
   return (
     <>
       <header>
         <h1>My Todo App</h1>
       </header>
+      <Outlet />
     </>
   );
-}
-
-export default App;
+};
