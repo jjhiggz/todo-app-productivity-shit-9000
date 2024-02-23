@@ -3,7 +3,9 @@ import "./App.css";
 function App() {
   return (
     <>
-      <h1>My Todo App</h1>
+      <header>
+        <h1>My Todo App</h1>
+      </header>
     </>
   );
 }
