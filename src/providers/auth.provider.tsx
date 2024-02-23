@@ -1,5 +1,5 @@
 import { ReactNode, createContext, useEffect, useState } from "react";
-import { User } from "../types";
+import { User, userSchema } from "../types";
 import { Requests } from "../api";
 
 type AuthState = "authenticated" | "unauthenticated" | "loading";
@@ -8,6 +8,7 @@ type AuthProviderType = {
   isLoading: boolean;
   authState: AuthState;
   login: (email: string, password: string) => Promise<void>;
+  logout: () => void;
 };
 
 const deriveAuthState = ({
@@ -22,27 +23,83 @@ const deriveAuthState = ({
   else return "unauthenticated";
 };
 
-const AuthContext = createContext<AuthProviderType | null>(null);
+const getUserFromDb = (email: string, password: string, allUsers: User[]) => {
+  const correctUser = allUsers.find((user) => user.email === email);
+  if (!correctUser) {
+    console.error("User not found");
+    return false;
+  }
+
+  if (correctUser.password !== password) {
+    console.error("Invalid Password");
+    return false;
+  }
+  return correctUser;
+};
+
+const getUserFromLocalStorage = (): User | null => {
+  const userFromLocalStorage = localStorage.getItem("user");
+  try {
+    return userSchema.parse(JSON.parse(userFromLocalStorage || ""));
+  } catch (e) {
+    console.error(e);
+    clearUser();
+    return null;
+  }
+};
+
+const clearUser = () => {
+  localStorage.removeItem("user");
+};
+
+export const AuthContext = createContext<AuthProviderType | null>(null);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState<User | null>(null);
 
   const authState = deriveAuthState({ user, isLoading });
+  const logout = () => {
+    clearUser();
+    setUser(null);
+  };
+
+  const login = (email: string, password: string) => {
+    return Requests.getAllUsers()
+      .then((users) => {
+        const userFromDb = getUserFromDb(email, password, users);
+        if (!userFromDb) {
+          setUser(null);
+          return;
+        }
+        setUser(userFromDb);
+        localStorage.setItem("user", JSON.stringify(userFromDb));
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+  };
 
   useEffect(() => {
-    Requests.getAllUsers().then(console.log);
+    const userFromLocalStorage = getUserFromLocalStorage();
+
+    if (!userFromLocalStorage) {
+      setIsLoading(false);
+      setUser(null);
+      return;
+    }
+
+    login(userFromLocalStorage.email, userFromLocalStorage.password);
   }, []);
 
   return (
     <AuthContext.Provider
       value={{
-        login: async (_email: string, _password: string) => {
-          return Promise.resolve();
-        },
+        login,
         isLoading,
         user,
         authState,
+        logout,
       }}
     >
       {children}
